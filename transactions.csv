@@ -1,3 +1,7 @@
 UserName,Date,AccountType,TransactionType,AmountRequested,Balance
 KRISTY,3/30/2023 8:57:57 PM,Savings,Deposit,12342,12342
 KRISTY,3/30/2023 8:57:57 PM,Checkings,Deposit,432123,432123
+EMA,3/31/2023 10:40:53 PM,Checkings,Deposit,2000,2000
+EMA,3/31/2023 11:57:45 PM,Savings,Deposit,150,150
+KRISTY,4/1/2023 12:02:32 AM,Savings,Withdrawal,2,12340
+KRISTY,4/1/2023 12:02:46 AM,Checkings,Withdrawal,3,432120

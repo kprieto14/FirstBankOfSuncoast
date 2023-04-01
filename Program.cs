@@ -161,6 +161,10 @@ namespace FirstBankOfSuncoast
       //Start of menu for user to work with their own account once it has been verified or loaded in
       while(keepGoing == true)
       {
+        //Establishes new Transaction object to be used for either deposits or withdrawals in Checkings/ Savings
+        var newTransaction = new Transaction();
+        var rightNow = DateTime.Now;
+
         //If the greeting returns a valid customer, the real banking application begins
         if(currentClient != null)
         {
@@ -170,26 +174,123 @@ namespace FirstBankOfSuncoast
         {
           //Chosen by the user to work with their savings account
           case "S":
-            response = PromptForString("\nYou have chosen your Savings account, what would you like to do with this account? \n(W)ithdraw \n(D)eposit \n(V)iew Balance\n");
+            response = PromptForString("\nYou have chosen your Savings account, what would you like to do with this account? \n(W)ithdraw \n(D)eposit \n(V)iew Account\n");
 
             switch(response)
             {
               //Withdraw from savings
               case "W":
-                Console.WriteLine("This will eventually allow you to withdraw money.");
-                //database.SaveTransactions();
+                var intResponse = PromptForInteger("\nHow much would you like to withdraw? (Remember this bank only accepts whole dollar amounts) ");
+                
+                //Checks if client has requested more than $0 funds to withdraw, if they have the funds it will disperse
+                if(intResponse > 0 && intResponse <= currentClient.SavingsBalance)
+                {
+                  //Double checks that the user wants to withdraw that amount
+                  response = PromptForString($"You have requested to withdraw ${intResponse} are you sure you want to withdraw that amount? (Y/N) ");
+                  
+                  if(response == "Y")
+                  {
+                    database.Withdraw(intResponse, currentClient, "S");
+                    
+                    //Make a new transaction profile
+                    newTransaction.UserName = currentClient.UserName;
+                    newTransaction.Date = rightNow.ToString();
+                    newTransaction.AccountType = "Savings";
+                    newTransaction.TransactionType = "Withdrawal";
+                    newTransaction.AmountRequested = intResponse;
+                    newTransaction.Balance = currentClient.SavingsBalance;
+                    database.AddTransaction(newTransaction);
+                    database.SaveTransactions();
+                    Console.WriteLine($"You have withdrew ${intResponse} from your savings account for a total balance of ${currentClient.SavingsBalance}.");
+                  }
+                  else if (response == "N")
+                  {
+                    Console.WriteLine("Okay, we will leave your Savings account alone.");
+                  }
+                  else
+                  {
+                    Console.WriteLine("I am not sure what you meant, we will leave your Savings Account alone.");
+                  }
+                }
+                //If they requested more than $0 AND more than what is in their account, it will not disperse the funds
+                else if(intResponse > 0 && intResponse > currentClient.SavingsBalance)
+                {
+                  Console.WriteLine("You do not have enough cash. Sorry 😔");
+                }
+                //If they requested $0, then nothing happens as well
+                else
+                {
+                  Console.WriteLine("You asked to take nothing out.");
+                }
                 break;
               
               //Deposit from savings
               case "D":
-                Console.WriteLine("This will eventually allow you to deposit money.");
-                //database.SaveTransactions();
+                intResponse = PromptForInteger("\nHow much would you like to deposit? (Remember this bank only accepts whole dollar amounts) ");
+                //Will only deposit if user actually deposits money
+                if (intResponse > 0)
+                {
+                  database.Deposit(intResponse, currentClient, "S");
+                  
+                  //Make a new transaction profile
+                  newTransaction.UserName = currentClient.UserName;
+                  newTransaction.Date = rightNow.ToString();
+                  newTransaction.AccountType = "Savings";
+                  newTransaction.TransactionType = "Deposit";
+                  newTransaction.AmountRequested = intResponse;
+                  newTransaction.Balance = currentClient.SavingsBalance;
+                  database.AddTransaction(newTransaction);
+                  database.SaveTransactions();
+                  Console.WriteLine($"You have deposited ${intResponse} into your savings account for a total balance of ${currentClient.SavingsBalance}.");
+
+                  //Tests to see if code should keep going based on user's response
+                  response = PromptForString("\nWould you like to do anything else? (Y/N) ");
+                  if(response == "N")
+                  {
+                    Console.WriteLine("Okay, please come back again soon!");
+                    keepGoing = false;
+                  }
+                  else if(response == "Y")
+                  {
+                    Console.WriteLine("Okay!");
+                  }
+                  else
+                  {
+                    Console.WriteLine("I did not quit get that. I will assume you mean keep going.");
+                  }
+                }
+                else
+                {
+                  Console.WriteLine("It looks like you did not add anything!");
+                }
                 break;
               
               //View savings balance or transaction history
               case "V":
-                //Shows savings balance
-                Console.WriteLine($"You currently have ${currentClient.SavingsBalance} in your account. ");
+                response = PromptForString("\nWould you like to view your (B)alance or (T)ransaction History for your Savings account? ");
+
+                switch(response)
+                {
+                  //View balance for savings
+                  case "B":
+                    //Views savings balance
+                    Console.WriteLine($"You currently have ${currentClient.SavingsBalance} in your account. ");
+                    break;
+
+                  //View transaction history
+                  case "T":
+                    //View total user transaction history for their savings account
+                    var savingsTransactions = database.ViewTransactions(currentClient.UserName, "S");
+
+                    Console.WriteLine("\nHere is your Savings transaction history: ");
+                    //Goes through list and prints out all the information in the transaction history with the same user name and puts it in a hopefully helpful table.
+                    for(var count = 0; count < savingsTransactions.Count(); count++)
+                    {
+                      var transaction = savingsTransactions[count];
+                      Console.WriteLine($"\n{count + 1} | {transaction.UserName} | {transaction.Date} | {transaction.AccountType}: {transaction.TransactionType} | Amount requested: ${transaction.AmountRequested} | Balance: ${transaction.Balance} |");
+                    }
+                    break;
+                }
                 break;
               
               //Prints if the user inputs something other than a valid response
@@ -201,25 +302,100 @@ namespace FirstBankOfSuncoast
 
           //Chosen by the user to work with their deposit account          
           case "C":
-            response = PromptForString("You have chosen your Checkings account, what would you like to do with this account? \n(W)ithdraw \n(D)eposit \n(V)iew\n");
+            response = PromptForString("\nYou have chosen your Checkings account, what would you like to do with this account? \n(W)ithdraw \n(D)eposit \n(V)iew Account\n");
 
             switch(response)
             {
-              //Withdraw
+              //Withdraw checkings
               case "W":
-                Console.WriteLine("This will eventually allow you to withdraw money.");
-                //database.SaveTransactions();
+                var intResponse = PromptForInteger("\nHow much would you like to withdraw? (Remember this bank only accepts whole dollar amounts) ");
+                
+                //Checks if client has requested more than $0 funds to withdraw, if they have the funds it will disperse
+                if(intResponse > 0 && intResponse <= currentClient.CheckingsBalance)
+                {
+                  //Double checks that the user wants to withdraw that amount
+                  response = PromptForString($"You have requested to withdraw ${intResponse} are you sure you want to withdraw that amount? (Y/N) ");
+                  
+                  if(response == "Y")
+                  {
+                    database.Withdraw(intResponse, currentClient, "C");
+                    
+                    //Make a new transaction profile
+                    newTransaction.UserName = currentClient.UserName;
+                    newTransaction.Date = rightNow.ToString();
+                    newTransaction.AccountType = "Checkings";
+                    newTransaction.TransactionType = "Withdrawal";
+                    newTransaction.AmountRequested = intResponse;
+                    newTransaction.Balance = currentClient.CheckingsBalance;
+                    database.AddTransaction(newTransaction);
+                    database.SaveTransactions();
+                    Console.WriteLine($"You have withdrew ${intResponse} from your checkings account for a total balance of ${currentClient.CheckingsBalance}.");
+                  }
+                  else if (response == "N")
+                  {
+                    Console.WriteLine("Okay, we will leave your Checkings account alone.");
+                  }
+                  else
+                  {
+                    Console.WriteLine("I am not sure what you meant, we will leave your Checkings Account alone.");
+                  }
+                }
+                //If they requested more than $0 AND more than what is in their account, it will not disperse the funds
+                else if(intResponse > 0 && intResponse > currentClient.CheckingsBalance)
+                {
+                  Console.WriteLine("You do not have enough cash. Sorry 😔");
+                }
+                //If they requested $0, then nothing happens as well
+                else
+                {
+                  Console.WriteLine("You asked to take nothing out.");
+                }
                 break;
               
-              //Deposit
+              //Deposit checkings
               case "D":
-                Console.WriteLine("This will eventually allow you to deposit money.");
-                //database.SaveTransactions();
+                intResponse = PromptForInteger("\nHow much would you like to deposit? (Remember this bank only accepts whole dollar amounts) ");
+                //Will only deposit if user actually deposits money
+                if (intResponse > 0)
+                {
+                  database.Deposit(intResponse, currentClient, "C");
+                  
+                  //Make a new transaction profile
+                  newTransaction.UserName = currentClient.UserName;
+                  newTransaction.Date = rightNow.ToString();
+                  newTransaction.AccountType = "Checkings";
+                  newTransaction.TransactionType = "Deposit";
+                  newTransaction.AmountRequested = intResponse;
+                  newTransaction.Balance = currentClient.CheckingsBalance;
+                  database.AddTransaction(newTransaction);
+                  database.SaveTransactions();
+                  Console.WriteLine($"You have deposited ${intResponse} into your checkings account for a total balance of ${currentClient.CheckingsBalance}.");
+
+                  //Tests to see if code should keep going based on user's response
+                  response = PromptForString("\nWould you like to do anything else? (Y/N) ");
+                  if(response == "N")
+                  {
+                    Console.WriteLine("Okay, please come back again soon!");
+                    keepGoing = false;
+                  }
+                  else if(response == "Y")
+                  {
+                    Console.WriteLine("Okay!");
+                  }
+                  else
+                  {
+                    Console.WriteLine("I did not quit get that. I will assume you mean keep going.");
+                  }
+                }
+                else
+                {
+                  Console.WriteLine("It looks like you did not add anything!");
+                }
                 break;
               
               //View balance or transaction history
               case "V":
-                response = PromptForString("\nWould you like to view your (B)alance or (T)ransaction History? ");
+                response = PromptForString("\nWould you like to view your (B)alance or (T)ransaction History for your Checkings account? ");
 
                 switch(response)
                 {
@@ -231,7 +407,16 @@ namespace FirstBankOfSuncoast
 
                   //View transaction history
                   case "T":
-                    Console.WriteLine("This will eventually allow you to view your transaction history.");
+                    //View total user transaction history
+                    var checkingTransactions = database.ViewTransactions(currentClient.UserName, "C");
+
+                    Console.WriteLine("\nHere is your Checking transaction history: ");
+                    //Goes through list and prints out all the information in the transaction history with the same user name and puts it in a hopefully helpful table.
+                    for(var count = 0; count < checkingTransactions.Count(); count++)
+                    {
+                      var transaction = checkingTransactions[count];
+                      Console.WriteLine($"\n{count + 1} | {transaction.UserName} | {transaction.Date} | {transaction.AccountType}: {transaction.TransactionType} | Amount requested: ${transaction.AmountRequested} | Balance: ${transaction.Balance} |");
+                    }
                     break;
                   
                   //Prints if the user inputs something other than a valid response
@@ -249,16 +434,16 @@ namespace FirstBankOfSuncoast
             break;
           
           case "V":
-            //View transaction history
+            //View total user transaction history
             var clientName = currentClient.UserName;
-            var transactions = database.ViewTransactions(clientName);
+            var transactions = database.ViewTransactions(clientName, null);
 
             Console.WriteLine("\nHere is your transaction history: ");
             //Goes through list and prints out all the information in the transaction history with the same user name and puts it in a hopefully helpful table.
             for(var count = 0; count < transactions.Count(); count++)
             {
               var transaction = transactions[count];
-              Console.WriteLine($"\n{count} | {transaction.UserName} | {transaction.Date} | {transaction.AccountType}: {transaction.TransactionType} | Amount requested: ${transaction.AmountRequested} | Balance: ${transaction.Balance} |");
+              Console.WriteLine($"\n{count + 1} | {transaction.UserName} | {transaction.Date} | {transaction.AccountType}: {transaction.TransactionType} | Amount requested: ${transaction.AmountRequested} | Balance: ${transaction.Balance} |");
             }
             break;
 
@@ -274,8 +459,7 @@ namespace FirstBankOfSuncoast
             break;
           }
         }
-
-        //Otherwise, the application stops
+        //Otherwise, the application stops if no valid customer is in the system
         else
         {
           keepGoing = false;

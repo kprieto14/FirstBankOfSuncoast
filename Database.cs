@@ -133,23 +133,57 @@ namespace FirstBankOfSuncoast
             //Will add to transaction history list every time it is called
             TransactionHistory.Add(newTransaction);
         }
-        //Will eventually calculate deposits and such?
-        public void Deposit()
+        //This method will deposit into the customers account and deposit the requested amount based on the letter the method sends
+        public void Deposit(int deposit, Client client, string account)
         {
-            //This method will deposit into the customers account
+            if(account == "S")
+            {
+                client.SavingsBalance = client.SavingsBalance + deposit;
+            }
+            else if (account == "C")
+            {
+                client.CheckingsBalance = client.CheckingsBalance + deposit;
+            }
         }
-        //Will eventually calculate withdrawals (ew)
-        public void Withdraw()
+        //This method will withdraw from the customers account
+        public void Withdraw(int withdraw, Client client, string account)
         {
-            //This method will withdraw from the customers account
+            if(account == "S")
+            {
+                client.SavingsBalance = client.SavingsBalance - withdraw;
+            }
+            else if (account == "C")
+            {
+                client.CheckingsBalance = client.CheckingsBalance - withdraw;
+            }
         }
         //Finds all transactions that have the same user and returns back all of the transactions that match
-        public List<Transaction> ViewTransactions(string name)
+        public List<Transaction> ViewTransactions(string name, string account)
         {
-            //This method will return the transaction history by finding every transaction that matches the name of the user
-            var requestedTransactions = TransactionHistory.Where(client => client.UserName == name).ToList();
+            if(account == null)
+            {
+                //This method will return the transaction history by finding every transaction that matches the name of the user
+                var requestedTransactions = TransactionHistory.Where(client => client.UserName == name).ToList();
 
-            return requestedTransactions;
+                return requestedTransactions;   
+            }
+            else if(account == "S")
+            {
+                //Will only return transactions for Savings account
+                var requestedTransactions = TransactionHistory.Where(client => client.UserName == name && client.AccountType == "Savings").ToList();
+                return requestedTransactions;
+            }
+            else if(account == "C")
+            {
+                //Will only return transactions for Checkings account
+                var requestedTransactions = TransactionHistory.Where(client => client.UserName == name && client.AccountType == "Checkings").ToList();
+                return requestedTransactions;
+            }
+            else
+            {
+                Console.WriteLine("Something went wrong. Please contact Kristy to fix this code.");
+                return null;
+            }
         }
     }
 }
